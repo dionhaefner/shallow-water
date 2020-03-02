@@ -1,6 +1,12 @@
 """ model2d_nonlinear.py
 
-2D shallow water model with Coriolis force and nonlinear terms.
+2D shallow water model with:
+
+- varying Coriolis force
+- nonlinear terms
+- lateral friction
+- periodic boundary conditions
+
 """
 
 import numpy as np
@@ -62,9 +68,9 @@ h0 = (
 
 
 def prepare_plot():
-    fig, ax = plt.subplots(1, 1, figsize=(10, 4))
+    fig, ax = plt.subplots(1, 1, figsize=(12, 5))
     cs = update_plot(0, h0, u0, v0, ax)
-    plt.colorbar(cs, label='$h$ (m)')
+    plt.colorbar(cs, label='$\\eta$ (m)')
     return fig, ax
 
 
@@ -83,12 +89,16 @@ def update_plot(t, h, u, v, ax):
         eta[1:-1, 1:-1],
         vmin=-plot_range, vmax=plot_range, cmap='RdBu_r'
     )
-    ax.quiver(
-        x[quiver_stride[1]] / 1e3,
-        y[quiver_stride[0]] / 1e3,
-        u[quiver_stride],
-        v[quiver_stride]
-    )
+
+    if np.any((u[quiver_stride] != 0) | (v[quiver_stride] != 0)):
+        ax.quiver(
+            x[quiver_stride[1]] / 1e3,
+            y[quiver_stride[0]] / 1e3,
+            u[quiver_stride],
+            v[quiver_stride],
+            clip_on=False
+        )
+
     ax.set_aspect('equal')
     ax.set_xlabel('$x$ (km)')
     ax.set_ylabel('$y$ (km)')

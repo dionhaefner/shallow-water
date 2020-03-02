@@ -1,6 +1,6 @@
 """ model2d_f.py
 
-2D shallow water model with Coriolis force.
+2D shallow water model with Coriolis force (f-plane).
 """
 
 import numpy as np
@@ -23,6 +23,7 @@ phase_speed = np.sqrt(gravity * depth)
 rossby_radius = np.sqrt(gravity * depth) / coriolis_param
 
 # plot parameters
+plot_range = 0.5
 plot_every = 2
 max_quivers = 21
 
@@ -34,41 +35,55 @@ x, y = (
 Y, X = np.meshgrid(y, x, indexing='ij')
 
 # initial conditions
-h0 = 1.0 * np.exp(
+h0 = depth + 1.0 * np.exp(
     - (X - x[n_x // 2]) ** 2 / rossby_radius ** 2
     - (Y - y[n_y - 2]) ** 2 / rossby_radius ** 2
 )
-u0 = 0
-v0 = 0
+u0 = np.zeros_like(h0)
+v0 = np.zeros_like(h0)
+
+
+def prepare_plot():
+    fig, ax = plt.subplots(1, 1, figsize=(8, 6))
+    cs = update_plot(0, h0, u0, v0, ax)
+    plt.colorbar(cs, label='$\\eta$ (m)')
+    return fig, ax
 
 
 def update_plot(t, h, u, v, ax):
-    h_range = 0.5 * np.max(np.abs(h0))
+    eta = h - depth
+
     quiver_stride = (
         slice(1, -1, n_y // max_quivers),
         slice(1, -1, n_x // max_quivers)
     )
 
     ax.clear()
-    ax.pcolormesh(
+    cs = ax.pcolormesh(
         x[1:-1] / 1e3,
         y[1:-1] / 1e3,
-        h[1:-1, 1:-1],
-        vmin=-h_range, vmax=h_range, cmap='viridis'
+        eta[1:-1, 1:-1],
+        vmin=-plot_range, vmax=plot_range, cmap='RdBu_r'
     )
-    ax.quiver(
-        x[quiver_stride[1]] / 1e3,
-        y[quiver_stride[0]] / 1e3,
-        u[quiver_stride],
-        v[quiver_stride]
-    )
+
+    if np.any((u[quiver_stride] != 0) | (v[quiver_stride] != 0)):
+        ax.quiver(
+            x[quiver_stride[1]] / 1e3,
+            y[quiver_stride[0]] / 1e3,
+            u[quiver_stride],
+            v[quiver_stride],
+            clip_on=False
+        )
+
+    ax.set_aspect('equal')
     ax.set_xlabel('$x$ (km)')
     ax.set_ylabel('$y$ (km)')
     ax.set_title(
-        '$h$ (m) at t=%5.2f days, R=%5.1f km, c=%5.1f m/s '
+        't=%5.2f days, R=%5.1f km, c=%5.1f m/s '
         % (t / 86400, rossby_radius / 1e3, phase_speed)
     )
-    plt.pause(0.01)
+    plt.pause(0.1)
+    return cs
 
 
 def iterate_shallow_water():
@@ -111,7 +126,7 @@ def iterate_shallow_water():
 
 
 if __name__ == '__main__':
-    fig, ax = plt.subplots(1, 1)
+    fig, ax = prepare_plot()
 
     model = iterate_shallow_water()
     for iteration, (h, u, v) in enumerate(model):
