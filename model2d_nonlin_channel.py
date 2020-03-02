@@ -136,8 +136,11 @@ def iterate_shallow_water():
 
     # time step equations
     while True:
-        fe[1:-1, 1:-1] = 0.5 * (h[1:-1, 1:-1] + h[1:-1, 2:]) * u[1:-1, 1:-1]
-        fn[1:-1, 1:-1] = 0.5 * (h[1:-1, 1:-1] + h[2:, 1:-1]) * v[1:-1, 1:-1]
+        hc = np.pad(h[1:-1, 1:-1], 1, 'edge')
+        hc = enforce_boundaries(hc, 'h')
+
+        fe[1:-1, 1:-1] = 0.5 * (hc[1:-1, 1:-1] + hc[1:-1, 2:]) * u[1:-1, 1:-1]
+        fn[1:-1, 1:-1] = 0.5 * (hc[1:-1, 1:-1] + hc[2:, 1:-1]) * v[1:-1, 1:-1]
         fe = enforce_boundaries(fe, 'u')
         fn = enforce_boundaries(fn, 'v')
 
@@ -157,9 +160,6 @@ def iterate_shallow_water():
             )
 
         else:  # nonlinear momentum equation
-            hc = np.pad(h[1:-1, 1:-1], 1, 'edge')
-            hc = enforce_boundaries(hc, 'h')
-
             # planetary and relative vorticity
             q[1:-1, 1:-1] = coriolis_param[1:-1, 1:-1] + (
                 (v[1:-1, 2:] - v[1:-1, 1:-1]) / dx
@@ -217,26 +217,27 @@ def iterate_shallow_water():
         u = enforce_boundaries(u, 'u')
         v = enforce_boundaries(v, 'v')
 
-        # lateral friction
-        fe[1:-1, 1:-1] = lateral_viscosity * (u[1:-1, 2:] - u[1:-1, 1:-1]) / dx
-        fn[1:-1, 1:-1] = lateral_viscosity * (u[2:, 1:-1] - u[1:-1, 1:-1]) / dy
-        fe = enforce_boundaries(fe, 'u')
-        fn = enforce_boundaries(fn, 'v')
+        if lateral_viscosity > 0:
+            # lateral friction
+            fe[1:-1, 1:-1] = lateral_viscosity * (u[1:-1, 2:] - u[1:-1, 1:-1]) / dx
+            fn[1:-1, 1:-1] = lateral_viscosity * (u[2:, 1:-1] - u[1:-1, 1:-1]) / dy
+            fe = enforce_boundaries(fe, 'u')
+            fn = enforce_boundaries(fn, 'v')
 
-        u[1:-1, 1:-1] += dt * (
-            (fe[1:-1, 1:-1] - fe[1:-1, :-2]) / dx
-            + (fn[1:-1, 1:-1] - fn[:-2, 1:-1]) / dy
-        )
+            u[1:-1, 1:-1] += dt * (
+                (fe[1:-1, 1:-1] - fe[1:-1, :-2]) / dx
+                + (fn[1:-1, 1:-1] - fn[:-2, 1:-1]) / dy
+            )
 
-        fe[1:-1, 1:-1] = lateral_viscosity * (v[1:-1, 2:] - u[1:-1, 1:-1]) / dx
-        fn[1:-1, 1:-1] = lateral_viscosity * (v[2:, 1:-1] - u[1:-1, 1:-1]) / dy
-        fe = enforce_boundaries(fe, 'u')
-        fn = enforce_boundaries(fn, 'v')
+            fe[1:-1, 1:-1] = lateral_viscosity * (v[1:-1, 2:] - u[1:-1, 1:-1]) / dx
+            fn[1:-1, 1:-1] = lateral_viscosity * (v[2:, 1:-1] - u[1:-1, 1:-1]) / dy
+            fe = enforce_boundaries(fe, 'u')
+            fn = enforce_boundaries(fn, 'v')
 
-        v[1:-1, 1:-1] += dt * (
-            (fe[1:-1, 1:-1] - fe[1:-1, :-2]) / dx
-            + (fn[1:-1, 1:-1] - fn[:-2, 1:-1]) / dy
-        )
+            v[1:-1, 1:-1] += dt * (
+                (fe[1:-1, 1:-1] - fe[1:-1, :-2]) / dx
+                + (fn[1:-1, 1:-1] - fn[:-2, 1:-1]) / dy
+            )
 
         # rotate quantities
         du[...] = du_new
