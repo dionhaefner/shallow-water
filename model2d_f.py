@@ -45,8 +45,8 @@ v0 = 0
 def update_plot(t, h, u, v, ax):
     h_range = 0.5 * np.max(np.abs(h0))
     quiver_stride = (
-        slice(1, -1, n_x // max_quivers),
-        slice(1, -1, n_y // max_quivers)
+        slice(1, -1, n_y // max_quivers),
+        slice(1, -1, n_x // max_quivers)
     )
 
     ax.clear()
@@ -57,18 +57,18 @@ def update_plot(t, h, u, v, ax):
         vmin=-h_range, vmax=h_range, cmap='viridis'
     )
     ax.quiver(
-        x[quiver_stride[0]] / 1e3,
-        y[quiver_stride[1]] / 1e3,
+        x[quiver_stride[1]] / 1e3,
+        y[quiver_stride[0]] / 1e3,
         u[quiver_stride],
         v[quiver_stride]
     )
     ax.set_xlabel('$x$ (km)')
-    ax.set_ylabel('$y$ (km)$')
+    ax.set_ylabel('$y$ (km)')
     ax.set_title(
         '$h$ (m) at t=%5.2f days, R=%5.1f km, c=%5.1f m/s '
         % (t / 86400, rossby_radius / 1e3, phase_speed)
     )
-    plt.pause(0.001)
+    plt.pause(0.01)
 
 
 def iterate_shallow_water():
@@ -85,20 +85,23 @@ def iterate_shallow_water():
 
     # time step equations
     while True:
-        v_av = 0.25 * (v[1:-1, 1:-1] + v[:-2, 1:-1] + v[1:-1, 2:] + v[:-2, 2:])
+        # update u
+        v_avg = 0.25 * (v[1:-1, 1:-1] + v[:-2, 1:-1] + v[1:-1, 2:] + v[:-2, 2:])
         u[1:-1, 1:-1] = u[1:-1, 1:-1] + dt * (
-            + coriolis_param * v_av
+            + coriolis_param * v_avg
             - gravity * (h[1:-1, 2:] - h[1:-1, 1:-1]) / dx
         )
         u[:, -2] = 0
 
-        u_av = 0.25 * (u[1:-1, 1:-1] + u[1:-1, :-2] + u[2:, 1:-1] + u[2:, :-2])
+        # update v
+        u_avg = 0.25 * (u[1:-1, 1:-1] + u[1:-1, :-2] + u[2:, 1:-1] + u[2:, :-2])
         v[1:-1, 1:-1] = v[1:-1, 1:-1] + dt * (
-            - coriolis_param * u_av
+            - coriolis_param * u_avg
             - gravity * (h[2:, 1:-1] - h[1:-1, 1:-1]) / dy
         )
         v[-2, :] = 0
 
+        # update h
         h[1:-1, 1:-1] = h[1:-1, 1:-1] - dt * depth * (
             (u[1:-1, 1:-1] - u[1:-1, :-2]) / dx
             + (v[1:-1, 1:-1] - v[:-2, 1:-1]) / dy
@@ -110,9 +113,12 @@ def iterate_shallow_water():
 if __name__ == '__main__':
     fig, ax = plt.subplots(1, 1)
 
-    print('Running forever (press Ctrl+C to cancel)')
     model = iterate_shallow_water()
     for iteration, (h, u, v) in enumerate(model):
         if iteration % plot_every == 0:
             t = iteration * dt
             update_plot(t, h, u, v, ax)
+
+        # stop if user closes plot window
+        if not plt.fignum_exists(fig.number):
+            break
