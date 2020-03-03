@@ -39,8 +39,8 @@ lateral_viscosity = 1e-3 * coriolis_f * dx ** 2
 periodic_boundary_x = False
 linear_momentum_equation = False
 
-adam_bashforth_a = 1.5 + 0.1
-adam_bashforth_b = -(0.5 + 0.1)
+adams_bashforth_a = 1.5 + 0.1
+adams_bashforth_b = -(0.5 + 0.1)
 
 dt = 0.125 * min(dx, dy) / np.sqrt(gravity * depth)
 
@@ -211,16 +211,16 @@ def iterate_shallow_water():
             first_step = False
         else:
             u[1:-1, 1:-1] += dt * (
-                adam_bashforth_a * du_new[1:-1, 1:-1]
-                + adam_bashforth_b * du[1:-1, 1:-1]
+                adams_bashforth_a * du_new[1:-1, 1:-1]
+                + adams_bashforth_b * du[1:-1, 1:-1]
             )
             v[1:-1, 1:-1] += dt * (
-                adam_bashforth_a * dv_new[1:-1, 1:-1]
-                + adam_bashforth_b * dv[1:-1, 1:-1]
+                adams_bashforth_a * dv_new[1:-1, 1:-1]
+                + adams_bashforth_b * dv[1:-1, 1:-1]
             )
             h[1:-1, 1:-1] += dt * (
-                adam_bashforth_a * dh_new[1:-1, 1:-1]
-                + adam_bashforth_b * dh[1:-1, 1:-1]
+                adams_bashforth_a * dh_new[1:-1, 1:-1]
+                + adams_bashforth_b * dh[1:-1, 1:-1]
             )
 
         h = enforce_boundaries(h, 'h')
