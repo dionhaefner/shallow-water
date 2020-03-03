@@ -10,8 +10,8 @@ This repository contains two shallow water implementations in Python. They are a
 
 - Mass conserving on (Cartesian) Arakawa C-grid
 - Mixed-time discretization
-- Coriolis force on an $f$-plane
-- Conditionally stable for $\Delta t \leq \sqrt{2}/f$
+- Coriolis force on an f-plane
+- Conditionally stable for `Δt >= √2 / f`
 
 ### Fully nonlinear implementation
 
@@ -19,7 +19,7 @@ All features of the simple implementation, plus...
 
 - Adams-Bashforth time stepping scheme
 - Lateral friction
-- Varying Coriolis parameter ($\beta$-plane)
+- Varying Coriolis parameter (β-plane)
 - Fully nonlinear momentum and continuity equations
 - Energy conserving scheme by Sadourny (1975)
 - Rigid or periodic boundary conditions
