@@ -69,12 +69,12 @@ h0 = (
 
 def prepare_plot():
     fig, ax = plt.subplots(1, 1, figsize=(12, 5))
-    cs = update_plot(0, h0, u0, v0, ax)
+    cs = update_plot(0, h0, u0, v0, ax, draw=False)
     plt.colorbar(cs, label='$\\eta$ (m)')
     return fig, ax
 
 
-def update_plot(t, h, u, v, ax):
+def update_plot(t, h, u, v, ax, draw=True):
     eta = h - depth
 
     quiver_stride = (
@@ -102,11 +102,16 @@ def update_plot(t, h, u, v, ax):
     ax.set_aspect('equal')
     ax.set_xlabel('$x$ (km)')
     ax.set_ylabel('$y$ (km)')
+    ax.set_xlim(x[1] / 1e3, x[-2] / 1e3)
+    ax.set_ylim(y[1] / 1e3, y[-2] / 1e3)
     ax.set_title(
         't=%5.2f days, R=%5.1f km, c=%5.1f m/s '
         % (t / 86400, rossby_radius / 1e3, phase_speed)
     )
-    plt.pause(0.1)
+
+    if draw:
+        plt.pause(0.1)
+
     return cs
 
 
@@ -259,7 +264,6 @@ def iterate_shallow_water():
 
 if __name__ == '__main__':
     fig, ax = prepare_plot()
-
     model = iterate_shallow_water()
     for iteration, (h, u, v) in enumerate(model):
         if iteration % plot_every == 0:
